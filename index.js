@@ -8,7 +8,7 @@ function SS(size, streamOpts) {
   this.registers = new Array(this.size);
   this.numUsedBuckets = 0;
 
-  for (var i = 0; i < this.registers; i++) {
+  for (var i = 0; i < this.registers.length; i++) {
     this.registers[i] = {
       count: null,
       elements: new Map()
@@ -20,12 +20,8 @@ SS.prototype = Object.create(Stream.Writable.prototype);
 SS.prototype.constructor = SS;
 
 SS.prototype.write = function(chunk, enc, next) {
-  if (!Buffer.isBuffer(chunk)) {
-    chunk = new Buffer(chunk);
-  }
-
-  var key = chunk.toString('hex');
-  var newCount;
+  var buf = Buffer.isBuffer(chunk) ? chunk : new Buffer(chunk);
+  var key = buf.toString('hex');
   var oldCount = this.trackedElements.get(key);
 
   if (oldCount === undefined) {
@@ -36,7 +32,6 @@ SS.prototype.write = function(chunk, enc, next) {
       this.trackedElements.delete(deletedKey);
 
       var err = this.registers[0].count;
-      newCount = err + 1;
       var nextBucket = 1;
 
       if (this.registers[0].elements.size === 0) {
@@ -48,15 +43,13 @@ SS.prototype.write = function(chunk, enc, next) {
       }
 
       //nextBucket is larger count, add new bucket
-      this.addElement(chunk, key, newCount, err, nextBucket);
+      this.addElement(chunk, key, oldCount + 1, err, nextBucket);
     }
     else {
-      newCount = 1;
-      this.addElement(chunk, key, newCount, 0, 0);
+      this.addElement(chunk, key, 1, 0, 0);
     }
   }
   else {
-    newCount = oldCount + 1;
     //increment count
     this.incrementElement(key);
   }
@@ -103,6 +96,7 @@ SS.prototype.incrementElement = function(key) {
 
 SS.prototype.addElement = function(element, key, count, error, idx) {
   idx = idx === undefined ? this.findInsertionIdx(count) : idx;
+
   if (this.registers[idx].count !== count) {
     this.registers.splice(idx, 0, this.registers.pop());
     this.registers[idx].count = count;
@@ -113,6 +107,28 @@ SS.prototype.addElement = function(element, key, count, error, idx) {
   this.registers[idx].elements.set(key, element);
 
   this.trackedElements.set(key, count);
+};
+
+SS.prototype.frequency = function(element) {
+  if (!Buffer.isBuffer(element)) {
+    element = new Buffer(element);
+  }
+
+  var key = element.toString('hex');
+  var count = this.trackedElements.get(key);
+  return count === undefined ? null : count;
+};
+
+SS.prototype.top = function() {
+  var results = [];
+
+  for (var i = 0; i < this.numUsedBuckets; i++) {
+    for (var element of this.registers[i].elements.values()) {
+      results.push(element);
+    }
+  }
+
+  return results;
 };
 
 module.exports = SS;
