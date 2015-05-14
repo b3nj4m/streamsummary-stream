@@ -151,4 +151,72 @@ SS.prototype.top = function() {
   return results;
 };
 
+SS.prototype.export = function() {
+  var trackedElements = {};
+  for (var entry of this.trackedElements.entries()) {
+    trackedElements[entry[0]] = {
+      count: entry[1].count,
+      error: entry[1].error
+    };
+  }
+
+  var registers = [];
+  var elements;
+  for (var entry of this.registers.entries()) {
+    entry = entry[1];
+    elements = {};
+    for (var element of entry.elements.entries()) {
+      elements[element[0]] = element[1];
+    }
+    registers.push({elements: elements, count: entry.count});
+  }
+
+  return {
+    size: this.size,
+    trackedElements: trackedElements,
+    registers: registers,
+    numUsedBuckets: this.numUsedBuckets
+  };
+};
+
+SS.prototype.import = function(data) {
+  this.size = data.size;
+  this.numUsedBuckets = data.numUsedBuckets;
+  this.computeConstants();
+  this.registers = new Array(this.size);
+  this.trackedElements = new Map();
+
+  for (var key in data.trackedElements) {
+    if (data.trackedElements.hasOwnProperty(key)) {
+      this.trackedElements.set(key, {
+        count: data.trackedElements[key].count,
+        error: data.trackedElements[key].error
+      });
+    }
+  }
+
+  for (var i = 0; i < this.registers.length; i++) {
+    this.registers[i] = {
+      count: data.registers[i].count,
+      elements: new Map()
+    };
+
+    for (key in data.registers[i].elements) {
+      if (data.registers[i].elements.hasOwnProperty(key)) {
+        this.registers[i].elements.set(key, data.registers[i].elements[key]);
+      }
+    }
+  }
+};
+
+SS.prototype.merge = function(ss) {
+  if (ss.size !== this.size) {
+    throw Error('StreamSummaries must have the same size');
+  }
+
+  var result = new SS(this.size, this.streamOpts);
+
+  //TODO merge without messing up error?
+};
+
 module.exports = SS;
