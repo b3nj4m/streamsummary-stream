@@ -1,6 +1,6 @@
 ## streamsummary-stream
 
-Implements the StreamSummary data structure described in [this paper](https://icmi.cs.ucsb.edu/research/tech_reports/reports/2005-23.pdf).
+Stream-based implementation of the StreamSummary data structure described in [this paper](https://icmi.cs.ucsb.edu/research/tech_reports/reports/2005-23.pdf).
 
 Pipe in your buffers/strings to get approximate top-K most frequent elements.
 
@@ -14,6 +14,7 @@ myDataSource.pipe(ss);
 
 ss.on('finish', function() {
   console.log(ss.frequency('42'));
+  console.log(ss.top());
 });
 ```
 
@@ -28,7 +29,11 @@ Construct a new writable StreamSummary to track the `size` most frequent element
 
 #### StreamSummary.frequency(element)
 
-Get the approximate frequency of `element`. Returns `false` if the element isn't in the top `size` elements.
+Get the approximate frequency of `element`. Returns `null` if the element isn't in the top `size` elements.
 
 * `element` - the value in question
+
+#### StreamSummary.top()
+
+Get the top `size` most frequent elements in ascending order of frequency.
 
