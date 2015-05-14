@@ -1,0 +1,28 @@
+{
+  "name": "streamsummary-stream",
+  "version": "0.1.0",
+  "description": "Stream-based stream summary implementation",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/b3nj4m/streamsummary-stream.git"
+  },
+  "keywords": [
+    "stream-summary",
+    "stream",
+    "frequency"
+  ],
+  "author": "Ben Robbins <ben.robbins@gmail.com> (https://b3nj4m.com/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/b3nj4m/streamsummary-stream/issues"
+  },
+  "homepage": "https://github.com/b3nj4m/streamsummary-stream#readme",
+  "devDependencies": {
+    "chai": "^2.3.0",
+    "mocha": "^2.2.4"
+  }
+}
