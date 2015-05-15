@@ -13,6 +13,7 @@
   "keywords": [
     "stream-summary",
     "stream",
+    "top-k",
     "frequency"
   ],
   "author": "Ben Robbins <ben.robbins@gmail.com> (https://b3nj4m.com/)",
