@@ -5,6 +5,7 @@ function SS(size, streamOpts) {
   streamOpts.decodeStrings = false;
   Stream.Writable.call(this, streamOpts);
 
+  this.streamOpts = streamOpts;
   this.size = size || 10;
   this.trackedElements = new Map();
   this.registers = new Array(this.size);
@@ -216,7 +217,41 @@ SS.prototype.merge = function(ss) {
 
   var result = new SS(this.size, this.streamOpts);
 
-  //TODO merge without messing up error?
+  //TODO does this invalidate error guarantees?
+  var k = this.registers.length - 1;
+  var l = this.registers.length - 1;
+  var register;
+  var source;
+  var element;
+  for (var i = this.registers.length - 1; i >= 0; i--) {
+    if (this.registers[k].count > ss.registers[l].count) {
+      source = this;
+      register = this.registers[k];
+      k--;
+    }
+    else {
+      source = ss;
+      register = ss.registers[l];
+      l--;
+    }
+
+    result.registers[i] = {
+      count: register.count,
+      elements: new Map()
+    };
+
+    for (var entry of register.elements.entries()) {
+      result.elements.set(entry[0], entry[1]);
+
+      element = source.trackedElements.get(entry[0]);
+      result.trackedElements.set(entry[0], {
+        count: element.count,
+        error: element.error
+      });
+    }
+  }
+
+  return result;
 };
 
 module.exports = SS;

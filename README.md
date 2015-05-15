@@ -37,3 +37,19 @@ Get the approximate frequency of `element`. Returns `null` if the element isn't 
 
 Get the top `size` most frequent elements in ascending order of frequency.
 
+#### StreamSummary.export()
+
+Export the StreamSummary data as an object.
+
+#### StreamSummary.import(data)
+
+Import a StreamSummary data object (expects same format as `export()` returns).
+
+* `data` - object containing StreamSummary data
+
+#### StreamSummary.merge(ss)
+
+Merge another StreamSummary with this one. The two StreamSummaries must have the same `size`. Returns a new StreamSummary.
+
+* `ss` - another StreamSummary instance
+
