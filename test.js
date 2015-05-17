@@ -3,11 +3,10 @@ var SS = require('./index');
 
 var expect = require('chai').expect;
 
-function makeSummary(size, numElements, callback) {
+function makeSummary(size, numElements, element, callback) {
   var s = new SS(size);
   var rs = new Stream.Readable({encoding: 'utf-8'});
   var i = 0;
-  var element = '42';
 
   rs._read = function() {
     var pushed = true;
@@ -54,7 +53,7 @@ describe('StreamSummary', function() {
 
   describe('import/export', function() {
     it('should export', function(done) {
-      makeSummary(10, 10, function(s, element) {
+      makeSummary(10, 10, 'beans', function(s, element) {
         var data = s.export();
         expect(data.size).to.equal(s.size);
         expect(data.numUsedBuckets).to.equal(s.numUsedBuckets);
@@ -78,6 +77,7 @@ describe('StreamSummary', function() {
 
         for (var key in data.trackedElements) {
           if (data.trackedElements.hasOwnProperty(key)) {
+            expect(data.trackedElements[key].value).to.equal(s.trackedElements.get(key).value);
             expect(data.trackedElements[key].count).to.equal(s.trackedElements.get(key).count);
             expect(data.trackedElements[key].error).to.equal(s.trackedElements.get(key).error);
           }
@@ -88,7 +88,7 @@ describe('StreamSummary', function() {
     });
 
     it('should import', function(done) {
-      makeSummary(10, 10, function(s, element) {
+      makeSummary(10, 10, 'beans', function(s, element) {
         var s2 = new SS();
         s2.import(s.export());
 
@@ -111,6 +111,7 @@ describe('StreamSummary', function() {
         }
 
         for (entry of s.trackedElements.entries()) {
+          expect(s2.trackedElements.get(entry[0]).value).to.equal(entry[1].value);
           expect(s2.trackedElements.get(entry[0]).count).to.equal(entry[1].count);
           expect(s2.trackedElements.get(entry[0]).error).to.equal(entry[1].error);
         }
@@ -120,14 +121,30 @@ describe('StreamSummary', function() {
     });
   });
 
+  describe('merge', function() {
+    it('should merge', function(done) {
+      makeSummary(10, 10, 'beans', function(s1, element) {
+        makeSummary(10, 11, 'cheese', function(s2, element) {
+          var s3 = s1.merge(s2);
+          var top = s3.top();
+          expect(s3.frequency('beans')).to.equal(10);
+          expect(s3.frequency('cheese')).to.equal(11);
+          expect(top.length).to.equal(10);
+          expect(top.slice(8)).to.deep.equal(['beans', 'cheese']);
+          done();
+        });
+      });
+    });
+  });
+
   describe('frequency', function() {
     it('should count frequent element', function(done) {
-      makeSummary(10, 10, function(s, element) {
-        expect(s.frequency(element)).to.equal(10);
+      makeSummary(100, 1000, 'beans', function(s, element) {
+        expect(s.frequency(element)).to.equal(1000);
 
         var top = s.top();
-        expect(top.length).to.equal(10);
-        expect(top[9]).to.equal(element);
+        expect(top.length).to.equal(100);
+        expect(top[99]).to.equal(element);
         done();
       });
     });

@@ -93,7 +93,7 @@ SS.prototype.findIdx = function(count) {
 
 SS.prototype.incrementElement = function(key) {
   var result = this.removeElement(key);
-  return this.addElement(result.element, key, result.record.count + 1, result.record.error);
+  return this.addElement(result.value, key, result.count + 1, result.error);
 };
 
 SS.prototype.popElement = function(idx) {
@@ -103,8 +103,9 @@ SS.prototype.popElement = function(idx) {
 SS.prototype.removeElement = function(key, idx) {
   var record = this.trackedElements.get(key);
   idx = idx === undefined ? this.findIdx(record.count) : idx;
-  var element = this.registers[idx].elements.get(key);
+
   this.registers[idx].elements.delete(key);
+  this.trackedElements.delete(key);
 
   if (this.registers[idx].elements.size === 0) {
     this.registers[idx].count = null;
@@ -112,11 +113,10 @@ SS.prototype.removeElement = function(key, idx) {
     this.numUsedBuckets--;
   }
 
-  return {element: element, record: record};
+  return record;
 };
 
 SS.prototype.addElement = function(element, key, count, error, idx) {
-  //console.log(element, new Error().stack);
   idx = idx === undefined ? this.findInsertionIdx(count) : idx;
   error = error || 0;
 
@@ -125,9 +125,9 @@ SS.prototype.addElement = function(element, key, count, error, idx) {
     this.registers[idx].count = count;
     this.numUsedBuckets++;
   }
-  this.registers[idx].elements.set(key, element);
+  this.registers[idx].elements.set(key, true);
 
-  this.trackedElements.set(key, {count: count, error: error});
+  this.trackedElements.set(key, {count: count, error: error, value: element});
 };
 
 SS.prototype.frequency = function(element) {
@@ -144,8 +144,8 @@ SS.prototype.top = function() {
   var results = [];
 
   for (var i = 0; i < this.numUsedBuckets; i++) {
-    for (var element of this.registers[i].elements.values()) {
-      results.push(element);
+    for (var key of this.registers[i].elements.keys()) {
+      results.push(this.trackedElements.get(key).value);
     }
   }
 
@@ -156,6 +156,7 @@ SS.prototype.export = function() {
   var trackedElements = {};
   for (var entry of this.trackedElements.entries()) {
     trackedElements[entry[0]] = {
+      value: entry[1].value,
       count: entry[1].count,
       error: entry[1].error
     };
@@ -190,6 +191,7 @@ SS.prototype.import = function(data) {
   for (var key in data.trackedElements) {
     if (data.trackedElements.hasOwnProperty(key)) {
       this.trackedElements.set(key, {
+        value: data.trackedElements[key].value,
         count: data.trackedElements[key].count,
         error: data.trackedElements[key].error
       });
@@ -204,7 +206,7 @@ SS.prototype.import = function(data) {
 
     for (key in data.registers[i].elements) {
       if (data.registers[i].elements.hasOwnProperty(key)) {
-        this.registers[i].elements.set(key, data.registers[i].elements[key]);
+        this.registers[i].elements.set(key, true);
       }
     }
   }
@@ -217,38 +219,54 @@ SS.prototype.merge = function(ss) {
 
   var result = new SS(this.size, this.streamOpts);
 
-  //TODO does this invalidate error guarantees?
-  var k = this.registers.length - 1;
-  var l = this.registers.length - 1;
-  var register;
-  var source;
-  var element;
-  for (var i = this.registers.length - 1; i >= 0; i--) {
-    if (this.registers[k].count > ss.registers[l].count) {
-      source = this;
-      register = this.registers[k];
-      k--;
-    }
-    else {
-      source = ss;
-      register = ss.registers[l];
-      l--;
-    }
+  //merge elements, sort, take top `size`
+  var mergedElements = new Map();
+  var el1;
+  var el2;
+  for (var key of this.trackedElements.keys()) {
+    el1 = this.trackedElements.get(key);
 
-    result.registers[i] = {
-      count: register.count,
-      elements: new Map()
-    };
+    if (ss.trackedElements.has(key)) {
+      el2 = ss.trackedElements.get(key);
 
-    for (var entry of register.elements.entries()) {
-      result.elements.set(entry[0], entry[1]);
-
-      element = source.trackedElements.get(entry[0]);
-      result.trackedElements.set(entry[0], {
-        count: element.count,
-        error: element.error
+      mergedElements.set(key, {
+        value: el1.value,
+        count: el1.count + el2.count,
+        error: el1.error + el2.error
       });
     }
+    else {
+      mergedElements.set(key, {
+        value: el1.value,
+        count: el1.count,
+        error: el1.error
+      });
+    }
+  }
+  for (key of ss.trackedElements.keys()) {
+    if (!this.trackedElements.has(key)) {
+      el1 = ss.trackedElements.get(key);
+
+      mergedElements.set(key, {
+        value: el1.value,
+        count: el1.count,
+        error: el1.error
+      });
+    }
+  }
+
+  var elementsList = [];
+
+  for (var entry of mergedElements.entries()) {
+    elementsList.push(entry);
+  }
+
+  elementsList = elementsList.sort(function(a, b) {
+    return b[1].count - b[1].error - a[1].count + a[1].error;
+  }).slice(0, result.size);
+
+  for (var i = 0; i < elementsList.length; i++) {
+    result.addElement(elementsList[i][1].value, elementsList[i][0], elementsList[i][1].count, elementsList[i][1].error);
   }
 
   return result;
