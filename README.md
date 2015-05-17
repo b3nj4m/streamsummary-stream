@@ -39,7 +39,16 @@ Get the top `size` most frequent elements in ascending order of frequency.
 
 #### StreamSummary.export()
 
-Export the StreamSummary data as an object.
+Export the StreamSummary data as an object. Exported object will look like:
+
+```javascript
+{
+  size: 42,
+  numUsedBuckets: 40,
+  trackedElements: {...},
+  registers: [...]
+}
+```
 
 #### StreamSummary.import(data)
 
