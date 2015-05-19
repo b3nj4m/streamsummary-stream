@@ -18,6 +18,10 @@ ss.on('finish', function() {
 });
 ```
 
+### Requires es6 `Map`
+
+This module uses es6 `Map`s, so you probably need node.js >= 0.12 or io.js.
+
 ### API
 
 #### StreamSummary(size, streamOpts)
