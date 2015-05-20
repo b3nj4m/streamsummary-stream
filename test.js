@@ -129,8 +129,9 @@ describe('StreamSummary', function() {
           var top = s3.top();
           expect(s3.frequency('beans')).to.equal(10);
           expect(s3.frequency('cheese')).to.equal(11);
-          expect(top.length).to.equal(10);
-          expect(top.slice(8)).to.deep.equal(['beans', 'cheese']);
+          //11 unique elements
+          expect(top.length).to.equal(11);
+          expect(top.slice(9)).to.deep.equal(['beans', 'cheese']);
           done();
         });
       });

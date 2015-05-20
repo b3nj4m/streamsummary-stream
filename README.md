@@ -62,7 +62,7 @@ Import a StreamSummary data object (expects same format as `export()` returns).
 
 #### StreamSummary.merge(ss)
 
-Merge another StreamSummary with this one. The two StreamSummaries must have the same `size`. Returns a new StreamSummary.
+Merge another StreamSummary with this one. Returns a new StreamSummary of `size` equal to the combined sizes of the two.
 
 * `ss` - another StreamSummary instance
 

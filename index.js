@@ -31,9 +31,12 @@ SS.prototype.computeConstants = function() {
 SS.prototype._write = function(chunk, enc, next) {
   var buf = Buffer.isBuffer(chunk) ? chunk : new Buffer(chunk);
   var key = buf.toString('hex');
-  var oldRecord = this.trackedElements.get(key);
 
-  if (oldRecord === undefined) {
+  if (this.trackedElements.has(key)) {
+    //increment count
+    this.incrementElement(key);
+  }
+  else {
     if (this.trackedElements.size === this.size) {
       //kick out the min element
       this.popElement(0);
@@ -42,10 +45,6 @@ SS.prototype._write = function(chunk, enc, next) {
     else {
       this.addElement(chunk, key, 1, 0, 0);
     }
-  }
-  else {
-    //increment count
-    this.incrementElement(key);
   }
 
   if (next) {
@@ -213,13 +212,9 @@ SS.prototype.import = function(data) {
 };
 
 SS.prototype.merge = function(ss) {
-  if (ss.size !== this.size) {
-    throw Error('StreamSummaries must have the same size');
-  }
+  var result = new SS(this.size + ss.size, this.streamOpts);
 
-  var result = new SS(this.size, this.streamOpts);
-
-  //merge elements, sort, take top `size`
+  //merge tracked elements
   var mergedElements = new Map();
   var el1;
   var el2;
@@ -255,18 +250,9 @@ SS.prototype.merge = function(ss) {
     }
   }
 
-  var elementsList = [];
-
+  //add elements to registers
   for (var entry of mergedElements.entries()) {
-    elementsList.push(entry);
-  }
-
-  elementsList = elementsList.sort(function(a, b) {
-    return b[1].count - b[1].error - a[1].count + a[1].error;
-  }).slice(0, result.size);
-
-  for (var i = 0; i < elementsList.length; i++) {
-    result.addElement(elementsList[i][1].value, elementsList[i][0], elementsList[i][1].count, elementsList[i][1].error);
+    result.addElement(entry[1].value, entry[0], entry[1].count, entry[1].error);
   }
 
   return result;
