@@ -6,15 +6,18 @@ Pipe in your buffers/strings to get approximate top-K most frequent elements.
 
 ```javascript
 var StreamSummary = require('streamsummary-stream');
+var es = require('event-stream');
+var fs = require('fs');
+
 var ss = new StreamSummary(50);
 
-//...
-
-myDataSource.pipe(ss);
+fs.createReadStream('data.txt')
+  .pipe(es.split())
+  .pipe(ss);
 
 ss.on('finish', function() {
-  console.log(ss.frequency('42'));
-  console.log(ss.top());
+  console.log('frequency of 42', ss.frequency('42'));
+  console.log('top values', ss.top());
 });
 ```
 
